@@ -12,6 +12,7 @@ from odoo.exceptions import UserError
 
 class AccountAnalyticAccount(models.Model):
     _inherit = 'account.analytic.account'
+    _order = "display_name"
 
     parent_id = fields.Many2one(
         'account.analytic.account',
@@ -19,6 +20,13 @@ class AccountAnalyticAccount(models.Model):
     )
     child_ids = fields.One2many('account.analytic.account', 'parent_id',
                                 'Child Accounts', copy=True)
+    display_name = fields.Char(compute='_compute_display_name', store=True, index=True)
+    
+    @api.depends('name', 'parent_id.name')
+    def _compute_display_name(self):
+        names = dict(self.name_get())
+        for record in self:
+            record.display_name = names.get(record.id, False)
 
     @api.multi
     def _compute_debit_credit_balance(self):
@@ -74,6 +82,19 @@ class AccountAnalyticAccount(models.Model):
                 current = current.parent_id
             res.append((account.id, name))
         return res
+    
+    @api.model
+    def name_search(self, name='', args=None, operator='ilike', limit=100):
+        if operator not in ('ilike', 'like', '=', '=like', '=ilike'):
+            return super(AccountAnalyticAccount, self).name_search(name, args, operator, limit)
+        args = args or []
+        domain = ['|', ('code', operator, name), ('display_name', operator, name)]
+        partners = self.env['res.partner'].search([('name', operator, name)], limit=limit)
+        if partners:
+            domain = ['|'] + domain + [('partner_id', 'in', partners.ids)]
+        recs = self.search(domain + args, limit=limit)
+        return recs.name_get()
+
 
     @api.multi
     @api.constrains('active')
