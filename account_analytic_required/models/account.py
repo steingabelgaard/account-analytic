@@ -81,6 +81,14 @@ class AccountMoveLine(models.Model):
                          ) % (move_line.account_id.code,
                               move_line.account_id.name,
                               move_line.name)
+            if move_line.analytic_account_id and move_line.analytic_account_id.child_ids:
+                return _("Analytic policy requires a leaf analytic account with account %s "
+                         "'%s' but the account move line with label '%s' "
+                         "has an analytic account '%s' which is non-leaf."
+                         ) % (move_line.account_id.code,
+                              move_line.account_id.name,
+                              move_line.name,
+                              move_line.analytic_account_id.name_get()[0][1])
 
     @api.constrains('analytic_account_id', 'account_id', 'debit', 'credit')
     def _check_analytic_required(self):
