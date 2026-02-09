@@ -26,6 +26,7 @@ class AccountMoveLine(models.Model):
                         "name": fieldname,
                         "string": dimension.name,
                         "domain": "[('analytic_dimension_id', '=', %d)]" % dimension.id,
+                        "context": "{'active_test': False}",
                     },
                 )
                 node_search[0].addnext(elem)
